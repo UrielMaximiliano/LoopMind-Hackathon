@@ -4,8 +4,23 @@ export const generatePersonalizedVideo = async (
   userName: string, 
   emotion: string
 ): Promise<string | null> => {
+  if (!TAVUS_API_KEY) {
+    console.warn('Tavus API key not configured');
+    return null;
+  }
+
   try {
-    const script = `Hello ${userName}, I noticed you've been feeling ${emotion} today. Remember that every emotion is valid and you're doing an amazing job taking care of your mental health. Keep going, you've got this!`;
+    const emotionMessages: Record<string, string> = {
+      happiness: `¡Hola ${userName}! Me alegra saber que te sientes feliz hoy. Disfruta este momento y comparte tu alegría con otros.`,
+      sadness: `Hola ${userName}. Veo que hoy te sientes triste. Recuerda que está bien sentir así y que no estás solo en esto.`,
+      stress: `${userName}, noto que estás estresado. Tómate un momento para respirar profundamente. Tienes la fuerza para superar esto.`,
+      anxiety: `Hola ${userName}. La ansiedad puede ser abrumadora, pero recuerda que es temporal. Enfócate en el presente.`,
+      anger: `${userName}, entiendo que te sientes enojado. Es una emoción válida. Tómate tiempo para calmarte antes de actuar.`,
+      calm: `¡Qué bien ${userName}! Te sientes tranquilo hoy. Aprovecha esta paz interior para reflexionar y planificar.`,
+      neutral: `Hola ${userName}. Estás en un estado equilibrado hoy. Es un buen momento para la introspección.`
+    };
+
+    const script = emotionMessages[emotion] || emotionMessages.neutral;
 
     const response = await fetch('https://tavusapi.com/v2/videos', {
       method: 'POST',
@@ -22,7 +37,7 @@ export const generatePersonalizedVideo = async (
     });
 
     if (!response.ok) {
-      throw new Error('Failed to generate video');
+      throw new Error(`Tavus API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -30,5 +45,31 @@ export const generatePersonalizedVideo = async (
   } catch (error) {
     console.error('Error generating video:', error);
     return null;
+  }
+};
+
+// Test Tavus connection
+export const testTavusConnection = async (): Promise<boolean> => {
+  if (!TAVUS_API_KEY) {
+    console.warn('⚠️ Tavus API key not configured');
+    return false;
+  }
+
+  try {
+    const response = await fetch('https://tavusapi.com/v2/replicas', {
+      headers: {
+        'x-api-key': TAVUS_API_KEY,
+      },
+    });
+
+    if (response.ok) {
+      console.log('✅ Tavus connected successfully');
+      return true;
+    } else {
+      throw new Error(`API responded with status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('❌ Tavus connection failed:', error);
+    return false;
   }
 };

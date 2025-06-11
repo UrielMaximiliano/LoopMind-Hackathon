@@ -2,13 +2,34 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { supabase } from '@/services/supabase';
+import { supabase, testSupabaseConnection } from '@/services/supabase';
+import { testOpenAIConnection } from '@/services/openai';
+import { testElevenLabsConnection } from '@/services/elevenlabs';
+import { testTavusConnection } from '@/services/tavus';
 import { router } from 'expo-router';
 
 export default function RootLayout() {
   useFrameworkReady();
 
   useEffect(() => {
+    // Test all API connections on app start
+    const testConnections = async () => {
+      console.log('🔄 Testing API connections...');
+      
+      const supabaseOk = await testSupabaseConnection();
+      const openaiOk = await testOpenAIConnection();
+      const elevenLabsOk = await testElevenLabsConnection();
+      const tavusOk = await testTavusConnection();
+      
+      console.log('📊 API Status:');
+      console.log(`Supabase: ${supabaseOk ? '✅' : '❌'}`);
+      console.log(`OpenAI: ${openaiOk ? '✅' : '❌'}`);
+      console.log(`ElevenLabs: ${elevenLabsOk ? '✅' : '❌'}`);
+      console.log(`Tavus: ${tavusOk ? '✅' : '❌'}`);
+    };
+
+    testConnections();
+
     // Check auth state on app start
     const checkAuthState = async () => {
       try {

@@ -3,6 +3,11 @@ import { EmotionAnalysis } from '@/types/emotion';
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
 
 export const analyzeEmotion = async (text: string): Promise<EmotionAnalysis> => {
+  if (!OPENAI_API_KEY) {
+    console.warn('OpenAI API key not configured, using fallback');
+    return getFallbackAnalysis(text);
+  }
+
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -19,7 +24,7 @@ export const analyzeEmotion = async (text: string): Promise<EmotionAnalysis> => 
             
             Clasifica la emoción como una de: happiness, sadness, stress, anxiety, anger, calm, excitement, fear, neutral, love, gratitude, hope, frustration, loneliness.
             
-            Responde en formato JSON:
+            Responde SOLO en formato JSON válido:
             {
               "emotion": "emocion_detectada",
               "advice": "consejo_empático_y_personal_máximo_80_palabras",
@@ -49,69 +54,88 @@ export const analyzeEmotion = async (text: string): Promise<EmotionAnalysis> => 
     });
 
     if (!response.ok) {
-      throw new Error('Failed to analyze emotion');
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const content = data.choices[0].message.content;
+    
+    // Clean the response to ensure it's valid JSON
+    const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+    const result = JSON.parse(cleanContent);
     
     return {
-      emotion: result.emotion,
-      advice: result.advice,
+      emotion: result.emotion || 'neutral',
+      advice: result.advice || 'Recuerda cuidarte hoy. Tus sentimientos son válidos.',
       confidence: result.confidence || 0.8,
       intensity: result.intensity || 5,
-      tags: result.tags || []
+      tags: result.tags || ['general']
     };
   } catch (error) {
     console.error('Error analyzing emotion:', error);
-    // Fallback response en español
-    return {
-      emotion: 'neutral',
-      advice: 'Recuerda cuidarte hoy. Tus sentimientos son válidos y temporales. Tómate un momento para respirar profundamente.',
-      confidence: 0.5,
-      intensity: 5,
-      tags: ['general', 'bienestar']
-    };
+    return getFallbackAnalysis(text);
   }
 };
 
-export const generatePersonalizedAdvice = async (
-  emotion: string, 
-  intensity: number, 
-  context: string
-): Promise<string> => {
+const getFallbackAnalysis = (text: string): EmotionAnalysis => {
+  // Simple keyword-based emotion detection as fallback
+  const lowerText = text.toLowerCase();
+  
+  let emotion = 'neutral';
+  let intensity = 5;
+  
+  if (lowerText.includes('feliz') || lowerText.includes('alegre') || lowerText.includes('contento')) {
+    emotion = 'happiness';
+    intensity = 7;
+  } else if (lowerText.includes('triste') || lowerText.includes('deprimido') || lowerText.includes('melancólico')) {
+    emotion = 'sadness';
+    intensity = 6;
+  } else if (lowerText.includes('estresado') || lowerText.includes('agobiado') || lowerText.includes('presión')) {
+    emotion = 'stress';
+    intensity = 7;
+  } else if (lowerText.includes('ansioso') || lowerText.includes('nervioso') || lowerText.includes('preocupado')) {
+    emotion = 'anxiety';
+    intensity = 6;
+  } else if (lowerText.includes('enojado') || lowerText.includes('furioso') || lowerText.includes('molesto')) {
+    emotion = 'anger';
+    intensity = 7;
+  } else if (lowerText.includes('tranquilo') || lowerText.includes('relajado') || lowerText.includes('sereno')) {
+    emotion = 'calm';
+    intensity = 3;
+  }
+
+  const adviceMap: Record<string, string> = {
+    happiness: 'Disfruta este momento de alegría. Comparte tu felicidad con otros y recuerda que mereces sentirte bien.',
+    sadness: 'Es normal sentirse triste a veces. Permítete sentir estas emociones y busca apoyo cuando lo necesites.',
+    stress: 'Tómate un momento para respirar profundamente. Identifica qué puedes controlar y enfócate en eso.',
+    anxiety: 'La ansiedad es temporal. Practica técnicas de respiración y enfócate en el presente.',
+    anger: 'Es válido sentir enojo. Tómate un tiempo para calmarte antes de tomar decisiones importantes.',
+    calm: 'Aprovecha esta tranquilidad para reflexionar y planificar. Estás en un buen estado mental.',
+    neutral: 'Estás en equilibrio. Es un buen momento para la introspección y el autoconocimiento.'
+  };
+
+  return {
+    emotion,
+    advice: adviceMap[emotion] || 'Recuerda cuidarte hoy. Tus sentimientos son válidos y temporales.',
+    confidence: 0.6,
+    intensity,
+    tags: ['análisis_básico', emotion]
+  };
+};
+
+// Test OpenAI connection
+export const testOpenAIConnection = async (): Promise<boolean> => {
+  if (!OPENAI_API_KEY) {
+    console.warn('⚠️ OpenAI API key not configured');
+    return false;
+  }
+
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un coach de bienestar especializado en salud mental. Proporciona consejos personalizados en español basados en la emoción, intensidad y contexto del usuario.`
-          },
-          {
-            role: 'user',
-            content: `Emoción: ${emotion}, Intensidad: ${intensity}/10, Contexto: ${context}. Dame un consejo personalizado de máximo 100 palabras.`
-          }
-        ],
-        temperature: 0.8,
-        max_tokens: 200,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to generate advice');
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
+    const testAnalysis = await analyzeEmotion('Me siento bien hoy');
+    console.log('✅ OpenAI connected successfully');
+    return true;
   } catch (error) {
-    console.error('Error generating advice:', error);
-    return 'Tómate un momento para reconocer tus sentimientos. Cada emoción tiene un propósito y es válida. Respira profundamente y recuerda que tienes la fuerza para superar cualquier desafío.';
+    console.error('❌ OpenAI connection failed:', error);
+    return false;
   }
 };

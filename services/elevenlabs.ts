@@ -1,6 +1,11 @@
 const ELEVENLABS_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || '';
 
 export const generateVoiceAdvice = async (text: string): Promise<string | null> => {
+  if (!ELEVENLABS_API_KEY) {
+    console.warn('ElevenLabs API key not configured');
+    return null;
+  }
+
   try {
     const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
       method: 'POST',
@@ -21,7 +26,7 @@ export const generateVoiceAdvice = async (text: string): Promise<string | null> 
     });
 
     if (!response.ok) {
-      throw new Error('Failed to generate voice');
+      throw new Error(`ElevenLabs API error: ${response.status}`);
     }
 
     const audioBlob = await response.blob();
@@ -30,5 +35,31 @@ export const generateVoiceAdvice = async (text: string): Promise<string | null> 
   } catch (error) {
     console.error('Error generating voice:', error);
     return null;
+  }
+};
+
+// Test ElevenLabs connection
+export const testElevenLabsConnection = async (): Promise<boolean> => {
+  if (!ELEVENLABS_API_KEY) {
+    console.warn('⚠️ ElevenLabs API key not configured');
+    return false;
+  }
+
+  try {
+    const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+      },
+    });
+
+    if (response.ok) {
+      console.log('✅ ElevenLabs connected successfully');
+      return true;
+    } else {
+      throw new Error(`API responded with status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('❌ ElevenLabs connection failed:', error);
+    return false;
   }
 };

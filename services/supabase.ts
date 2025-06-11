@@ -10,6 +10,9 @@ export const signUp = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: undefined, // Disable email confirmation for demo
+    }
   });
   return { data, error };
 };
@@ -32,56 +35,20 @@ export const getCurrentUser = async () => {
   return { user, error };
 };
 
-// User profile operations
-export const getUserProfile = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  return { data, error };
-};
-
-export const updateUserProfile = async (userId: string, updates: any) => {
-  const { data, error } = await supabase
-    .from('users')
-    .update(updates)
-    .eq('id', userId)
-    .select()
-    .single();
-  return { data, error };
-};
-
-export const createUserProfile = async (profile: any) => {
-  const { data, error } = await supabase
-    .from('users')
-    .insert([profile])
-    .select()
-    .single();
-  return { data, error };
-};
-
-// User preferences operations
-export const getUserPreferences = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('user_preferences')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-  return { data, error };
-};
-
-export const updateUserPreferences = async (userId: string, preferences: any) => {
-  const { data, error } = await supabase
-    .from('user_preferences')
-    .upsert({ user_id: userId, ...preferences })
-    .select()
-    .single();
-  return { data, error };
-};
-
-// Database operations
-export const saveEmotionEntry = async (entry: Omit<any, 'id' | 'created_at'>) => {
+// Database operations for emotion entries
+export const saveEmotionEntry = async (entry: {
+  user_id: string;
+  date: string;
+  user_input: string;
+  input_type: 'text' | 'audio';
+  detected_emotion: string;
+  ai_advice: string;
+  confidence_score?: number;
+  mood_intensity?: number;
+  tags?: string[];
+  audio_url?: string;
+  video_url?: string;
+}) => {
   const { data, error } = await supabase
     .from('emotion_entries')
     .insert([entry])
@@ -117,58 +84,22 @@ export const getEmotionStats = async (userId: string, days: number = 7) => {
   return { data, error };
 };
 
-export const getEmotionStatsAggregated = async (userId: string, days: number = 7) => {
-  const dateFrom = new Date();
-  dateFrom.setDate(dateFrom.getDate() - days);
-  
-  const { data, error } = await supabase
-    .from('emotion_stats')
-    .select('*')
-    .eq('user_id', userId)
-    .gte('date', dateFrom.toISOString().split('T')[0])
-    .order('date', { ascending: false });
-  
-  return { data, error };
-};
-
-export const getUserStreak = async (userId: string) => {
-  const { data, error } = await supabase
-    .rpc('calculate_user_streak', { user_uuid: userId });
-  
-  return { data, error };
-};
-
-// Coaching sessions operations
-export const createCoachingSession = async (session: any) => {
-  const { data, error } = await supabase
-    .from('coaching_sessions')
-    .insert([session])
-    .select()
-    .single();
-  return { data, error };
-};
-
-export const getCoachingSessions = async (userId: string, limit?: number) => {
-  let query = supabase
-    .from('coaching_sessions')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-  
-  if (limit) {
-    query = query.limit(limit);
+// Test connection function
+export const testSupabaseConnection = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('emotion_entries')
+      .select('count', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Supabase connection error:', error);
+      return false;
+    }
+    
+    console.log('✅ Supabase connected successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ Supabase connection failed:', error);
+    return false;
   }
-  
-  const { data, error } = await query;
-  return { data, error };
-};
-
-export const updateCoachingSession = async (sessionId: string, updates: any) => {
-  const { data, error } = await supabase
-    .from('coaching_sessions')
-    .update(updates)
-    .eq('id', sessionId)
-    .select()
-    .single();
-  return { data, error };
 };
