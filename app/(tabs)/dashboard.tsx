@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { TrendingUp, Calendar, Clock, Award, BarChart3, Target } from 'lucide-react-native';
+import { TrendingUp, Calendar, Clock, Award, ChartBar as BarChart3, Target } from 'lucide-react-native';
 import EmotionChart from '@/components/EmotionChart';
 import EmotionHistory from '@/components/EmotionHistory';
 import { EmotionEntry, EmotionStats } from '@/types/emotion';

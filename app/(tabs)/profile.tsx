@@ -12,22 +12,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  User,
-  Crown,
-  Settings,
-  Bell,
-  Moon,
-  Sun,
-  LogOut,
-  Heart,
-  Star,
-  Shield,
-  HelpCircle,
-  ExternalLink,
-  Database,
-  Zap,
-} from 'lucide-react-native';
+import { User, Crown, Settings, Bell, Moon, Sun, LogOut, Heart, Star, Shield, CircleHelp as HelpCircle, ExternalLink, Database, Zap } from 'lucide-react-native';
 import { getCurrentUser, signOut } from '@/services/supabase';
 
 export default function ProfileScreen() {
