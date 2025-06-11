@@ -6,9 +6,10 @@ import {
   StyleSheet,
   Alert,
   Platform,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Volume2, Play, Pause, Video, Heart, Star } from 'lucide-react-native';
+import { Volume2, Play, Pause, Video, Heart, Star, ExternalLink } from 'lucide-react-native';
 import { EmotionAnalysis } from '@/types/emotion';
 import { getEmotionEmoji, getEmotionGradient, getMoodMessage, getWellnessTip } from '@/utils/emotions';
 import { generateVoiceAdvice } from '@/services/elevenlabs';
@@ -40,7 +41,11 @@ export default function EmotionResult({ analysis, userName = 'Amigo' }: EmotionR
         // Auto-play the audio
         playAudio(voiceUrl);
       } else {
-        Alert.alert('Error', 'No se pudo generar la voz. Intenta de nuevo.');
+        Alert.alert(
+          'Función Premium', 
+          'La síntesis de voz requiere configurar ElevenLabs API. Por ahora puedes leer el consejo en pantalla.',
+          [{ text: 'Entendido' }]
+        );
       }
     } catch (error) {
       Alert.alert('Error', 'No se pudo generar la voz. Intenta de nuevo.');
@@ -57,7 +62,17 @@ export default function EmotionResult({ analysis, userName = 'Amigo' }: EmotionR
         setVideoUrl(videoUrlResult);
         Alert.alert('¡Éxito!', '¡Tu video personalizado está listo!');
       } else {
-        Alert.alert('Error', 'No se pudo generar el video. Intenta de nuevo.');
+        Alert.alert(
+          'Función Premium', 
+          'Los videos personalizados requieren configurar Tavus API. Esta función estará disponible con tu suscripción premium.',
+          [
+            { text: 'Más tarde' },
+            { 
+              text: 'Saber más', 
+              onPress: () => Linking.openURL('https://tavus.io') 
+            }
+          ]
+        );
       }
     } catch (error) {
       Alert.alert('Error', 'No se pudo generar el video. Intenta de nuevo.');
@@ -84,6 +99,26 @@ export default function EmotionResult({ analysis, userName = 'Amigo' }: EmotionR
     return '#F44336';
   };
 
+  const getEmotionTranslation = (emotion: string) => {
+    const translations: Record<string, string> = {
+      happiness: 'feliz',
+      sadness: 'triste',
+      stress: 'estresado/a',
+      anxiety: 'ansioso/a',
+      anger: 'enojado/a',
+      calm: 'tranquilo/a',
+      excitement: 'emocionado/a',
+      fear: 'temeroso/a',
+      love: 'amoroso/a',
+      gratitude: 'agradecido/a',
+      hope: 'esperanzado/a',
+      frustration: 'frustrado/a',
+      loneliness: 'solo/a',
+      neutral: 'equilibrado/a'
+    };
+    return translations[emotion] || emotion;
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -93,20 +128,7 @@ export default function EmotionResult({ analysis, userName = 'Amigo' }: EmotionR
         <View style={styles.emotionHeader}>
           <Text style={styles.emoji}>{emoji}</Text>
           <Text style={styles.emotionTitle}>
-            Te sientes {analysis.emotion === 'happiness' ? 'feliz' : 
-                      analysis.emotion === 'sadness' ? 'triste' :
-                      analysis.emotion === 'stress' ? 'estresado/a' :
-                      analysis.emotion === 'anxiety' ? 'ansioso/a' :
-                      analysis.emotion === 'anger' ? 'enojado/a' :
-                      analysis.emotion === 'calm' ? 'tranquilo/a' :
-                      analysis.emotion === 'excitement' ? 'emocionado/a' :
-                      analysis.emotion === 'fear' ? 'temeroso/a' :
-                      analysis.emotion === 'love' ? 'amoroso/a' :
-                      analysis.emotion === 'gratitude' ? 'agradecido/a' :
-                      analysis.emotion === 'hope' ? 'esperanzado/a' :
-                      analysis.emotion === 'frustration' ? 'frustrado/a' :
-                      analysis.emotion === 'loneliness' ? 'solo/a' :
-                      analysis.emotion}
+            Te sientes {getEmotionTranslation(analysis.emotion)}
           </Text>
           
           <View style={styles.metricsContainer}>
@@ -137,7 +159,7 @@ export default function EmotionResult({ analysis, userName = 'Amigo' }: EmotionR
 
         {/* AI Advice */}
         <View style={styles.adviceContainer}>
-          <Text style={styles.adviceTitle}>Tu Coach de Bienestar dice:</Text>
+          <Text style={styles.adviceTitle}>💬 Tu Coach de Bienestar dice:</Text>
           <Text style={styles.adviceText}>{analysis.advice}</Text>
         </View>
 
@@ -150,7 +172,7 @@ export default function EmotionResult({ analysis, userName = 'Amigo' }: EmotionR
         {/* Tags */}
         {analysis.tags && analysis.tags.length > 0 && (
           <View style={styles.tagsContainer}>
-            <Text style={styles.tagsTitle}>Etiquetas:</Text>
+            <Text style={styles.tagsTitle}>🏷️ Etiquetas:</Text>
             <View style={styles.tagsWrapper}>
               {analysis.tags.map((tag, index) => (
                 <View key={index} style={styles.tag}>
@@ -170,7 +192,7 @@ export default function EmotionResult({ analysis, userName = 'Amigo' }: EmotionR
           >
             <Volume2 size={20} color="#6B73FF" />
             <Text style={styles.actionText}>
-              {isGeneratingVoice ? 'Generando...' : 'Escuchar Consejo'}
+              {isGeneratingVoice ? 'Generando...' : 'Escuchar'}
             </Text>
           </TouchableOpacity>
 
@@ -209,12 +231,26 @@ export default function EmotionResult({ analysis, userName = 'Amigo' }: EmotionR
             <Text style={styles.videoText}>¡Tu video personalizado está listo!</Text>
             <TouchableOpacity
               style={styles.videoButton}
-              onPress={() => Alert.alert('Video', 'El video se abriría aquí en una app real')}
+              onPress={() => {
+                if (Platform.OS === 'web') {
+                  window.open(videoUrl, '_blank');
+                } else {
+                  Linking.openURL(videoUrl);
+                }
+              }}
             >
+              <ExternalLink size={16} color="white" />
               <Text style={styles.videoButtonText}>Ver Video</Text>
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Success Message */}
+        <View style={styles.successContainer}>
+          <Text style={styles.successText}>
+            ✅ Tu entrada emocional ha sido guardada y analizada exitosamente
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -290,6 +326,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#6B73FF',
   },
   moodMessage: {
     fontSize: 16,
@@ -300,6 +338,9 @@ const styles = StyleSheet.create({
   },
   adviceContainer: {
     marginBottom: 20,
+    backgroundColor: '#F0F8FF',
+    padding: 16,
+    borderRadius: 12,
   },
   adviceTitle: {
     fontSize: 18,
@@ -396,6 +437,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    marginBottom: 16,
   },
   videoText: {
     color: '#2C3E50',
@@ -404,14 +446,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   videoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#4CAF50',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
+    gap: 8,
   },
   videoButtonText: {
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  successContainer: {
+    backgroundColor: '#E8F5E8',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  successText: {
+    color: '#2E7D32',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

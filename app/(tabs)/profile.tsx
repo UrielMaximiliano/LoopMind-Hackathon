@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Switch,
+  Linking,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,6 +23,10 @@ import {
   Heart,
   Star,
   Shield,
+  HelpCircle,
+  ExternalLink,
+  Database,
+  Zap,
 } from 'lucide-react-native';
 import { getCurrentUser, signOut } from '@/services/supabase';
 
@@ -46,19 +51,19 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      'Cerrar Sesión',
+      '¿Estás seguro de que quieres cerrar sesión?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Sign Out',
+          text: 'Cerrar Sesión',
           style: 'destructive',
           onPress: async () => {
             try {
               await signOut();
               // Navigation will be handled by the auth state change
             } catch (error) {
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
+              Alert.alert('Error', 'No se pudo cerrar sesión. Intenta de nuevo.');
             }
           },
         },
@@ -68,16 +73,33 @@ export default function ProfileScreen() {
 
   const handleUpgradeToPremium = () => {
     Alert.alert(
-      '🌟 Upgrade to Premium',
-      'Unlock personalized videos, unlimited history, and exclusive wellness features!\n\n• AI-generated videos from Tavus\n• Unlimited emotion tracking\n• Advanced analytics\n• Priority support\n\nNote: RevenueCat integration requires exporting this project to implement native payment processing.',
+      '🌟 Actualizar a Premium',
+      '¡Desbloquea videos personalizados, historial ilimitado y funciones exclusivas de bienestar!\n\n• Videos generados por IA con Tavus\n• Seguimiento emocional ilimitado\n• Análisis avanzados\n• Soporte prioritario\n• Síntesis de voz con ElevenLabs\n\nNota: La integración de RevenueCat requiere exportar este proyecto para implementar el procesamiento de pagos nativos.',
       [
-        { text: 'Maybe Later', style: 'cancel' },
-        { text: 'Learn More', onPress: () => console.log('Premium info') },
+        { text: 'Más Tarde', style: 'cancel' },
+        { 
+          text: 'Saber Más', 
+          onPress: () => Linking.openURL('https://revenuecat.com/docs/getting-started/installation/expo')
+        },
       ]
     );
   };
 
-  const userName = user?.email?.split('@')[0] || 'User';
+  const handleAPISetup = () => {
+    Alert.alert(
+      '🔧 Configuración de APIs',
+      'Para habilitar todas las funciones premium:\n\n1. Crea un archivo .env en la raíz del proyecto\n2. Agrega tus claves de API:\n   - EXPO_PUBLIC_OPENAI_API_KEY\n   - EXPO_PUBLIC_ELEVENLABS_API_KEY\n   - EXPO_PUBLIC_TAVUS_API_KEY\n   - EXPO_PUBLIC_SUPABASE_URL\n   - EXPO_PUBLIC_SUPABASE_ANON_KEY\n\n3. Reinicia la aplicación',
+      [
+        { text: 'Entendido' },
+        { 
+          text: 'Ver Documentación', 
+          onPress: () => Linking.openURL('https://docs.expo.dev/guides/environment-variables/')
+        },
+      ]
+    );
+  };
+
+  const userName = user?.email?.split('@')[0] || 'Usuario';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -110,7 +132,7 @@ export default function ProfileScreen() {
           {!isPremium && (
             <TouchableOpacity style={styles.premiumButton} onPress={handleUpgradeToPremium}>
               <Crown size={16} color="#FFD700" />
-              <Text style={styles.premiumButtonText}>Upgrade to Premium</Text>
+              <Text style={styles.premiumButtonText}>Actualizar a Premium</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -120,7 +142,7 @@ export default function ProfileScreen() {
         {/* Premium Features */}
         {!isPremium && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Premium Features</Text>
+            <Text style={styles.sectionTitle}>Funciones Premium</Text>
             
             <TouchableOpacity style={styles.featureCard} onPress={handleUpgradeToPremium}>
               <LinearGradient
@@ -129,9 +151,9 @@ export default function ProfileScreen() {
               >
                 <Crown size={24} color="white" />
                 <View style={styles.featureContent}>
-                  <Text style={styles.featureTitle}>Personalized Videos</Text>
+                  <Text style={styles.featureTitle}>Videos Personalizados</Text>
                   <Text style={styles.featureDescription}>
-                    Get AI-generated video messages tailored to your emotions
+                    Recibe mensajes de video generados por IA adaptados a tus emociones
                   </Text>
                 </View>
               </LinearGradient>
@@ -144,9 +166,24 @@ export default function ProfileScreen() {
               >
                 <Star size={24} color="white" />
                 <View style={styles.featureContent}>
-                  <Text style={styles.featureTitle}>Unlimited History</Text>
+                  <Text style={styles.featureTitle}>Historial Ilimitado</Text>
                   <Text style={styles.featureDescription}>
-                    Access your complete emotional wellness journey
+                    Accede a tu viaje completo de bienestar emocional
+                  </Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.featureCard} onPress={handleUpgradeToPremium}>
+              <LinearGradient
+                colors={['#9C27B0', '#BA68C8']}
+                style={styles.featureGradient}
+              >
+                <Zap size={24} color="white" />
+                <View style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>Síntesis de Voz</Text>
+                  <Text style={styles.featureDescription}>
+                    Escucha tus consejos de bienestar con voces naturales de IA
                   </Text>
                 </View>
               </LinearGradient>
@@ -156,13 +193,13 @@ export default function ProfileScreen() {
 
         {/* Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+          <Text style={styles.sectionTitle}>Configuración</Text>
           
           <View style={styles.settingsList}>
             <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
                 <Bell size={20} color="#6B73FF" />
-                <Text style={styles.settingText}>Notifications</Text>
+                <Text style={styles.settingText}>Notificaciones</Text>
               </View>
               <Switch
                 value={notifications}
@@ -179,7 +216,7 @@ export default function ProfileScreen() {
                 ) : (
                   <Sun size={20} color="#6B73FF" />
                 )}
-                <Text style={styles.settingText}>Dark Mode</Text>
+                <Text style={styles.settingText}>Modo Oscuro</Text>
               </View>
               <Switch
                 value={darkMode}
@@ -189,35 +226,75 @@ export default function ProfileScreen() {
               />
             </View>
 
+            <TouchableOpacity style={styles.settingItem} onPress={handleAPISetup}>
+              <View style={styles.settingLeft}>
+                <Database size={20} color="#6B73FF" />
+                <Text style={styles.settingText}>Configurar APIs</Text>
+              </View>
+              <ExternalLink size={16} color="#7F8C8D" />
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.settingItem}>
               <View style={styles.settingLeft}>
                 <Shield size={20} color="#6B73FF" />
-                <Text style={styles.settingText}>Privacy & Security</Text>
+                <Text style={styles.settingText}>Privacidad y Seguridad</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem}>
               <View style={styles.settingLeft}>
                 <Settings size={20} color="#6B73FF" />
-                <Text style={styles.settingText}>App Settings</Text>
+                <Text style={styles.settingText}>Configuración de la App</Text>
               </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Help & Support */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ayuda y Soporte</Text>
+          
+          <View style={styles.settingsList}>
+            <TouchableOpacity 
+              style={styles.settingItem}
+              onPress={() => Linking.openURL('https://docs.expo.dev')}
+            >
+              <View style={styles.settingLeft}>
+                <HelpCircle size={20} color="#6B73FF" />
+                <Text style={styles.settingText}>Centro de Ayuda</Text>
+              </View>
+              <ExternalLink size={16} color="#7F8C8D" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.settingItem}
+              onPress={() => Linking.openURL('mailto:support@loopmind.app')}
+            >
+              <View style={styles.settingLeft}>
+                <Heart size={20} color="#6B73FF" />
+                <Text style={styles.settingText}>Contactar Soporte</Text>
+              </View>
+              <ExternalLink size={16} color="#7F8C8D" />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* About */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.sectionTitle}>Acerca de</Text>
           
           <View style={styles.aboutCard}>
             <Heart size={24} color="#E91E63" />
             <View style={styles.aboutContent}>
               <Text style={styles.aboutTitle}>LoopMind Wellness</Text>
               <Text style={styles.aboutDescription}>
-                Your AI-powered emotional wellness companion. Built with love to help you 
-                understand and improve your mental health journey.
+                Tu compañero de bienestar emocional impulsado por IA. Construido con amor para ayudarte 
+                a entender y mejorar tu viaje de salud mental.
               </Text>
-              <Text style={styles.version}>Version 1.0.0</Text>
+              <Text style={styles.aboutTech}>
+                Tecnologías: React Native • Expo • Supabase • OpenAI • ElevenLabs • Tavus
+              </Text>
+              <Text style={styles.version}>Versión 1.0.0</Text>
             </View>
           </View>
         </View>
@@ -225,7 +302,7 @@ export default function ProfileScreen() {
         {/* Sign Out */}
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <LogOut size={20} color="#FF5722" />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={styles.signOutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -372,6 +449,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#7F8C8D',
     lineHeight: 20,
+    marginBottom: 12,
+  },
+  aboutTech: {
+    fontSize: 12,
+    color: '#95A5A6',
+    lineHeight: 16,
     marginBottom: 8,
   },
   version: {
