@@ -4,18 +4,17 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "npx expo start",
-    "dev": "npx expo start --dev-client",
-    "android": "npx expo start --android",
-    "ios": "npx expo start --ios",
-    "web": "npx expo start --web",
-    "build:web": "npx expo export --platform web",
-    "build": "npx expo build",
-    "eject": "npx expo eject",
-    "lint": "npx expo lint"
+    "start": "expo start",
+    "dev": "expo start --dev-client",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build:web": "expo export --platform web",
+    "build": "expo build",
+    "eject": "expo eject",
+    "lint": "expo lint"
   },
   "dependencies": {
-    "ts-node": "^10.9.2",
     "@expo/vector-icons": "^14.0.2",
     "@react-navigation/bottom-tabs": "^6.5.20",
     "@react-navigation/native": "^6.1.17",
@@ -29,6 +28,7 @@
     "expo-haptics": "~13.0.1",
     "expo-linear-gradient": "~13.0.2",
     "expo-linking": "~6.3.1",
+    "expo-modules-core": "~1.12.20",
     "expo-router": "~4.0.17",
     "expo-splash-screen": "~0.27.5",
     "expo-status-bar": "~1.12.1",
@@ -52,9 +52,6 @@
     "typescript": "~5.3.3"
   },
   "resolutions": {
-    "expo-modules-core": "1.12.20"
-  },
-  "overrides": {
-    "expo-modules-core": "1.12.20"
+    "expo-modules-core": "~1.12.20"
   }
 }
