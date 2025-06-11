@@ -17,4 +17,10 @@ config.resolver.sourceExts = [...config.resolver.sourceExts, 'ts', 'tsx'];
 // Configuración para mejor compatibilidad web
 config.transformer.assetPlugins = ['expo-asset/tools/hashAssetFiles'];
 
+// Configuración específica para resolver problemas con expo-modules-core
+config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
+
+// Configuración para manejar archivos TypeScript en node_modules
+config.transformer.babelTransformerPath = require.resolve('metro-react-native-babel-transformer');
+
 module.exports = config;
