@@ -15,7 +15,7 @@ import { getCurrentUser } from '@/services/supabase';
 
 export default function HomeScreen() {
   const [currentAnalysis, setCurrentAnalysis] = useState<EmotionAnalysis | null>(null);
-  const [userName, setUserName] = useState('Friend');
+  const [userName, setUserName] = useState('Amigo');
 
   useEffect(() => {
     loadUserData();
@@ -47,9 +47,9 @@ export default function HomeScreen() {
         style={styles.header}
       >
         <View style={styles.headerContent}>
-          <Text style={styles.greeting}>Hello {userName}! 👋</Text>
+          <Text style={styles.greeting}>¡Hola {userName}! 👋</Text>
           <Text style={styles.tagline}>
-            Let's check in with your emotions today
+            Vamos a revisar tus emociones hoy
           </Text>
         </View>
       </LinearGradient>
@@ -69,20 +69,25 @@ export default function HomeScreen() {
         )}
 
         <View style={styles.tips}>
-          <Text style={styles.tipsTitle}>Daily Wellness Tips</Text>
+          <Text style={styles.tipsTitle}>Consejos de Bienestar Diario</Text>
           <View style={styles.tipCard}>
             <Text style={styles.tipText}>
-              💡 Take 3 deep breaths before checking your emotions
+              💡 Toma 3 respiraciones profundas antes de revisar tus emociones
             </Text>
           </View>
           <View style={styles.tipCard}>
             <Text style={styles.tipText}>
-              🌱 Remember: all emotions are valid and temporary
+              🌱 Recuerda: todas las emociones son válidas y temporales
             </Text>
           </View>
           <View style={styles.tipCard}>
             <Text style={styles.tipText}>
-              ⭐ Consistency in tracking helps build emotional awareness
+              ⭐ La consistencia en el seguimiento ayuda a construir conciencia emocional
+            </Text>
+          </View>
+          <View style={styles.tipCard}>
+            <Text style={styles.tipText}>
+              🎯 Prueba escribir detalles específicos sobre cómo te sientes para un mejor análisis
             </Text>
           </View>
         </View>

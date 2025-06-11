@@ -26,7 +26,10 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
   const [moodIntensity, setMoodIntensity] = useState(5);
 
   const handleTextSubmit = async () => {
-    if (!input.trim()) return;
+    if (!input.trim()) {
+      Alert.alert('Error', 'Por favor escribe algo antes de analizar');
+      return;
+    }
 
     setIsAnalyzing(true);
     try {
@@ -36,23 +39,30 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
       // Save to Supabase
       const { user } = await getCurrentUser();
       if (user) {
-        await saveEmotionEntry({
+        const entryData = {
           user_id: user.id,
           date: new Date().toISOString().split('T')[0],
           user_input: input,
-          input_type: 'text',
+          input_type: 'text' as const,
           detected_emotion: analysis.emotion,
           ai_advice: analysis.advice,
           confidence_score: analysis.confidence,
           mood_intensity: analysis.intensity || moodIntensity,
           tags: analysis.tags || [],
-        });
+        };
+
+        const { error } = await saveEmotionEntry(entryData);
+        if (error) {
+          console.error('Error saving entry:', error);
+          Alert.alert('Aviso', 'El análisis se completó pero no se pudo guardar en la base de datos.');
+        }
       }
 
       onEmotionAnalyzed(analysis);
       setInput('');
       setMoodIntensity(5);
     } catch (error) {
+      console.error('Error in handleTextSubmit:', error);
       Alert.alert('Error', 'No se pudo analizar tu emoción. Por favor intenta de nuevo.');
     } finally {
       setIsAnalyzing(false);
@@ -87,26 +97,35 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
   const handleQuickEmotion = async (emotion: string) => {
     const quickAnalysis: EmotionAnalysis = {
       emotion,
-      advice: `Has seleccionado ${emotion}. Tómate un momento para reflexionar sobre este sentimiento.`,
+      advice: `Has seleccionado ${emotion}. Tómate un momento para reflexionar sobre este sentimiento y recuerda que todas las emociones son válidas.`,
       confidence: 0.9,
       intensity: moodIntensity,
     };
 
-    const { user } = await getCurrentUser();
-    if (user) {
-      await saveEmotionEntry({
-        user_id: user.id,
-        date: new Date().toISOString().split('T')[0],
-        user_input: `Selección rápida: ${emotion}`,
-        input_type: 'text',
-        detected_emotion: emotion,
-        ai_advice: quickAnalysis.advice,
-        confidence_score: 0.9,
-        mood_intensity: moodIntensity,
-      });
-    }
+    try {
+      const { user } = await getCurrentUser();
+      if (user) {
+        const entryData = {
+          user_id: user.id,
+          date: new Date().toISOString().split('T')[0],
+          user_input: `Selección rápida: ${emotion}`,
+          input_type: 'text' as const,
+          detected_emotion: emotion,
+          ai_advice: quickAnalysis.advice,
+          confidence_score: 0.9,
+          mood_intensity: moodIntensity,
+          tags: ['selección_rápida', emotion],
+        };
 
-    onEmotionAnalyzed(quickAnalysis);
+        await saveEmotionEntry(entryData);
+      }
+
+      onEmotionAnalyzed(quickAnalysis);
+    } catch (error) {
+      console.error('Error saving quick emotion:', error);
+      // Still show the analysis even if saving fails
+      onEmotionAnalyzed(quickAnalysis);
+    }
   };
 
   return (
@@ -126,6 +145,7 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
               key={item.emotion}
               style={styles.quickEmotionButton}
               onPress={() => handleQuickEmotion(item.emotion)}
+              disabled={isAnalyzing}
             >
               <Text style={styles.quickEmotionEmoji}>{item.emoji}</Text>
               <Text style={styles.quickEmotionLabel}>{item.label}</Text>
@@ -146,6 +166,7 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
                 moodIntensity >= value && styles.intensityDotActive
               ]}
               onPress={() => setMoodIntensity(value)}
+              disabled={isAnalyzing}
             />
           ))}
         </View>
@@ -155,13 +176,14 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.textInput}
-          placeholder="Describe cómo te sientes..."
+          placeholder="Describe cómo te sientes... Por ejemplo: 'Me siento ansioso por el trabajo' o 'Estoy muy feliz hoy'"
           placeholderTextColor="#A0A0A0"
           value={input}
           onChangeText={setInput}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
+          editable={!isAnalyzing}
         />
       </View>
 
@@ -170,6 +192,7 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
         <TouchableOpacity
           style={[styles.voiceButton, isRecording && styles.voiceButtonActive]}
           onPress={handleVoiceRecord}
+          disabled={isAnalyzing}
         >
           {isRecording ? (
             <MicOff size={24} color="white" />
@@ -179,7 +202,7 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.submitButton, !input.trim() && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (!input.trim() || isAnalyzing) && styles.submitButtonDisabled]}
           onPress={handleTextSubmit}
           disabled={!input.trim() || isAnalyzing}
         >
@@ -198,6 +221,14 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
           </LinearGradient>
         </TouchableOpacity>
       </View>
+
+      {isAnalyzing && (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>
+            Analizando tu estado emocional con IA...
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -232,6 +263,7 @@ const styles = StyleSheet.create({
     color: '#7F8C8D',
     textAlign: 'center',
     marginBottom: 24,
+    lineHeight: 22,
   },
   quickEmotionsContainer: {
     marginBottom: 20,
@@ -345,5 +377,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#6B73FF',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
