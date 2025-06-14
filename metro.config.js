@@ -2,25 +2,29 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
+// Asegurarse de que las propiedades existen
+config.resolver = config.resolver || {};
+config.transformer = config.transformer || {};
+
 // Configuración mejorada para React Native Web
 config.resolver.alias = {
   'react-native-svg': 'react-native-svg/lib/commonjs/ReactNativeSVG.web.js',
-  '@': __dirname
+  '@': __dirname,
 };
 
-// Configuración adicional para web
+// Plataformas compatibles
 config.resolver.platforms = ['web', 'native', 'ios', 'android'];
 
-// Add TypeScript support to source extensions
-config.resolver.sourceExts = [...config.resolver.sourceExts, 'ts', 'tsx'];
+// Extensiones de archivo con soporte TypeScript
+config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'ts', 'tsx'];
 
-// Configuración para mejor compatibilidad web
+// Plugin de assets para web
 config.transformer.assetPlugins = ['expo-asset/tools/hashAssetFiles'];
 
-// Configuración específica para resolver problemas con expo-modules-core
+// Resolver campos principales
 config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 
-// Configuración para manejar archivos TypeScript en node_modules
+// Soporte para TypeScript en node_modules
 config.transformer.babelTransformerPath = require.resolve('metro-react-native-babel-transformer');
 
 module.exports = config;
