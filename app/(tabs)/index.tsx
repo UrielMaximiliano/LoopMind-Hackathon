@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   SafeAreaView,
+  TouchableOpacity,
+  Text,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import EmotionInput from '@/components/EmotionInput';
 import EmotionResult from '@/components/EmotionResult';
+import ChatView from '@/components/Chat/ChatView';
 import { EmotionAnalysis } from '@/types/emotion';
 import { getCurrentUser } from '@/services/supabase';
 
 export default function HomeScreen() {
   const [currentAnalysis, setCurrentAnalysis] = useState<EmotionAnalysis | null>(null);
   const [userName, setUserName] = useState('Amigo');
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -40,58 +43,35 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="auto" />
       
-      <LinearGradient
-        colors={['#6B73FF', '#9B59B6', '#3498DB']}
-        style={styles.header}
-      >
-        <View style={styles.headerContent}>
-          <Text style={styles.greeting}>¡Hola {userName}! 👋</Text>
-          <Text style={styles.tagline}>
-            Vamos a revisar tus emociones hoy
-          </Text>
-        </View>
-      </LinearGradient>
-
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <EmotionInput onEmotionAnalyzed={handleEmotionAnalyzed} />
-        
-        {currentAnalysis && (
-          <EmotionResult 
-            analysis={currentAnalysis} 
-            userName={userName}
+      <View style={styles.header}>
+        <Text style={styles.title}>
+          {showChat ? 'Chat Emocional' : 'Análisis Emocional'}
+        </Text>
+        <TouchableOpacity
+          style={styles.toggleButton}
+          onPress={() => setShowChat(!showChat)}
+        >
+          <Ionicons
+            name={showChat ? 'analytics' : 'chatbubbles'}
+            size={24}
+            color="#6B73FF"
           />
-        )}
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.tips}>
-          <Text style={styles.tipsTitle}>Consejos de Bienestar Diario</Text>
-          <View style={styles.tipCard}>
-            <Text style={styles.tipText}>
-              💡 Toma 3 respiraciones profundas antes de revisar tus emociones
-            </Text>
-          </View>
-          <View style={styles.tipCard}>
-            <Text style={styles.tipText}>
-              🌱 Recuerda: todas las emociones son válidas y temporales
-            </Text>
-          </View>
-          <View style={styles.tipCard}>
-            <Text style={styles.tipText}>
-              ⭐ La consistencia en el seguimiento ayuda a construir conciencia emocional
-            </Text>
-          </View>
-          <View style={styles.tipCard}>
-            <Text style={styles.tipText}>
-              🎯 Prueba escribir detalles específicos sobre cómo te sientes para un mejor análisis
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
+      {showChat ? (
+        <ChatView />
+      ) : (
+        <ScrollView style={styles.content}>
+          {!currentAnalysis ? (
+            <EmotionInput onEmotionAnalyzed={handleEmotionAnalyzed} />
+          ) : (
+            <EmotionResult analysis={currentAnalysis} userName={userName} />
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -99,60 +79,31 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#fff',
   },
   header: {
-    paddingTop: 20,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
   },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 8,
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#2C3E50',
   },
-  tagline: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    lineHeight: 22,
+  toggleButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  tips: {
-    margin: 16,
-    marginTop: 32,
-  },
-  tipsTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2C3E50',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  tipCard: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  tipText: {
-    fontSize: 14,
-    color: '#34495E',
-    lineHeight: 20,
   },
 });

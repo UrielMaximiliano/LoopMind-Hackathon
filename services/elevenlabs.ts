@@ -1,27 +1,29 @@
 const ELEVENLABS_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || '';
+const VOICE_ID = process.env.EXPO_PUBLIC_ELEVENLABS_VOICE_ID || '';
 
 export const generateVoiceAdvice = async (text: string): Promise<string | null> => {
-  if (!ELEVENLABS_API_KEY) {
-    console.warn('ElevenLabs API key not configured');
+  if (!ELEVENLABS_API_KEY || !VOICE_ID) {
+    console.warn('ElevenLabs API key or Voice ID not configured');
     return null;
   }
 
   try {
-    const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
       method: 'POST',
       headers: {
-        'xi-api-key': ELEVENLABS_API_KEY,
+        'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
+        'xi-api-key': ELEVENLABS_API_KEY,
       },
       body: JSON.stringify({
-        text: text,
-        model_id: 'eleven_monolingual_v1',
+        text,
+        model_id: 'eleven_multilingual_v2',
         voice_settings: {
           stability: 0.5,
           similarity_boost: 0.75,
-          style: 0.2,
-          use_speaker_boost: true
-        }
+          style: 0.0,
+          use_speaker_boost: true,
+        },
       }),
     });
 
@@ -29,11 +31,12 @@ export const generateVoiceAdvice = async (text: string): Promise<string | null> 
       throw new Error(`ElevenLabs API error: ${response.status}`);
     }
 
-    const audioBlob = await response.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
+    // Convertir la respuesta a blob y crear una URL
+    const blob = await response.blob();
+    const audioUrl = URL.createObjectURL(blob);
     return audioUrl;
   } catch (error) {
-    console.error('Error generating voice:', error);
+    console.error('Error al generar voz:', error);
     return null;
   }
 };
