@@ -49,6 +49,7 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/react": "~18.2.79",
+    "metro-react-native-babel-transformer": "^0.77.0",
     "typescript": "~5.3.3"
   },
   "resolutions": {
