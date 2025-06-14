@@ -6,7 +6,7 @@ module.exports = function (api) {
     ],
     plugins: [
       // Reanimated plugin should be listed last
-      'react-native-reanimated/plugin',
-    ],
+      'react-native-reanimated/plugin'
+    ]
   };
 };

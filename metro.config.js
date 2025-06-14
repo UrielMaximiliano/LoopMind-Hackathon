@@ -5,7 +5,7 @@ const config = getDefaultConfig(__dirname);
 // Configuración mejorada para React Native Web
 config.resolver.alias = {
   'react-native-svg': 'react-native-svg/lib/commonjs/ReactNativeSVG.web.js',
-  '@': __dirname,
+  '@': __dirname
 };
 
 // Configuración adicional para web
