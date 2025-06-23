@@ -7,7 +7,7 @@ Este proyecto está configurado para deployarse en Netlify usando Expo SDK 53.
 ### Configuración de Netlify
 
 1. **Build Command**: `npm run build:netlify`
-2. **Publish Directory**: `web-build`
+2. **Publish Directory**: `dist`
 3. **Node Version**: 18
 
 ### Variables de Entorno Requeridas
@@ -28,8 +28,8 @@ Asegúrate de configurar las siguientes variables de entorno en Netlify:
 
 ### Estructura de Archivos
 
-- El build se genera en el directorio `web-build/`
-- Los archivos estáticos se sirven desde la raíz del directorio `web-build/`
+- El build se genera en el directorio `dist/`
+- Los archivos estáticos se sirven desde la raíz del directorio `dist/`
 - Las rutas se manejan con redirects para SPA
 
 ### Solución de Problemas
@@ -39,4 +39,4 @@ Si el deploy falla:
 1. Verifica que todas las variables de entorno estén configuradas
 2. Asegúrate de que el Node.js version sea 18 o superior
 3. El comando de build debe ser `npm run build:netlify`
-4. El directorio de publicación debe ser `web-build` 
+4. El directorio de publicación debe ser `dist` 
