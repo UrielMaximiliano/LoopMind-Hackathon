@@ -3,10 +3,25 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Check if we have valid credentials
+const hasValidCredentials = supabaseUrl && 
+  supabaseAnonKey && 
+  !supabaseUrl.includes('your-project-id') && 
+  !supabaseAnonKey.includes('your-supabase-anon-key');
+
+export const supabase = hasValidCredentials 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createClient('https://placeholder.supabase.co', 'placeholder-key');
 
 // Auth helpers
 export const signUp = async (email: string, password: string) => {
+  if (!hasValidCredentials) {
+    return { 
+      data: null, 
+      error: { message: 'Supabase credentials not configured. Please update your .env file.' } 
+    };
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -18,6 +33,13 @@ export const signUp = async (email: string, password: string) => {
 };
 
 export const signIn = async (email: string, password: string) => {
+  if (!hasValidCredentials) {
+    return { 
+      data: null, 
+      error: { message: 'Supabase credentials not configured. Please update your .env file.' } 
+    };
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -26,11 +48,19 @@ export const signIn = async (email: string, password: string) => {
 };
 
 export const signOut = async () => {
+  if (!hasValidCredentials) {
+    return { error: { message: 'Supabase credentials not configured.' } };
+  }
+
   const { error } = await supabase.auth.signOut();
   return { error };
 };
 
 export const getCurrentUser = async () => {
+  if (!hasValidCredentials) {
+    return { user: null, error: { message: 'Supabase credentials not configured.' } };
+  }
+
   const { data: { user }, error } = await supabase.auth.getUser();
   return { user, error };
 };
@@ -49,6 +79,13 @@ export const saveEmotionEntry = async (entry: {
   audio_url?: string;
   video_url?: string;
 }) => {
+  if (!hasValidCredentials) {
+    return { 
+      data: null, 
+      error: { message: 'Supabase credentials not configured.' } 
+    };
+  }
+
   const { data, error } = await supabase
     .from('emotion_entries')
     .insert([entry])
@@ -57,6 +94,13 @@ export const saveEmotionEntry = async (entry: {
 };
 
 export const getEmotionEntries = async (userId: string, limit?: number) => {
+  if (!hasValidCredentials) {
+    return { 
+      data: null, 
+      error: { message: 'Supabase credentials not configured.' } 
+    };
+  }
+
   let query = supabase
     .from('emotion_entries')
     .select('*')
@@ -72,6 +116,13 @@ export const getEmotionEntries = async (userId: string, limit?: number) => {
 };
 
 export const getEmotionStats = async (userId: string, days: number = 7) => {
+  if (!hasValidCredentials) {
+    return { 
+      data: null, 
+      error: { message: 'Supabase credentials not configured.' } 
+    };
+  }
+
   const dateFrom = new Date();
   dateFrom.setDate(dateFrom.getDate() - days);
   
@@ -86,6 +137,11 @@ export const getEmotionStats = async (userId: string, days: number = 7) => {
 
 // Test connection function
 export const testSupabaseConnection = async () => {
+  if (!hasValidCredentials) {
+    console.warn('⚠️ Supabase credentials not configured');
+    return false;
+  }
+
   try {
     const { data, error } = await supabase
       .from('emotion_entries')

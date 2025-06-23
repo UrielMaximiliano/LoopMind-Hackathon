@@ -1,10 +1,13 @@
 const TAVUS_API_KEY = process.env.EXPO_PUBLIC_TAVUS_API_KEY || '';
 
+// Check if we have a valid API key
+const hasValidApiKey = TAVUS_API_KEY && !TAVUS_API_KEY.includes('your-tavus-api-key');
+
 export const generatePersonalizedVideo = async (
   userName: string, 
   emotion: string
 ): Promise<string | null> => {
-  if (!TAVUS_API_KEY) {
+  if (!hasValidApiKey) {
     console.warn('Tavus API key not configured');
     return null;
   }
@@ -50,7 +53,7 @@ export const generatePersonalizedVideo = async (
 
 // Test Tavus connection
 export const testTavusConnection = async (): Promise<boolean> => {
-  if (!TAVUS_API_KEY) {
+  if (!hasValidApiKey) {
     console.warn('⚠️ Tavus API key not configured');
     return false;
   }

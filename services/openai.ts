@@ -2,8 +2,11 @@ import { EmotionAnalysis } from '@/types/emotion';
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
 
+// Check if we have a valid API key
+const hasValidApiKey = OPENAI_API_KEY && !OPENAI_API_KEY.includes('your-openai-api-key');
+
 export const analyzeEmotion = async (text: string): Promise<EmotionAnalysis> => {
-  if (!OPENAI_API_KEY) {
+  if (!hasValidApiKey) {
     console.warn('OpenAI API key not configured, using fallback');
     return getFallbackAnalysis(text);
   }
@@ -125,7 +128,7 @@ const getFallbackAnalysis = (text: string): EmotionAnalysis => {
 
 // Test OpenAI connection
 export const testOpenAIConnection = async (): Promise<boolean> => {
-  if (!OPENAI_API_KEY) {
+  if (!hasValidApiKey) {
     console.warn('⚠️ OpenAI API key not configured');
     return false;
   }

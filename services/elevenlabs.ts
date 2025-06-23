@@ -1,8 +1,14 @@
 const ELEVENLABS_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || '';
 const VOICE_ID = process.env.EXPO_PUBLIC_ELEVENLABS_VOICE_ID || '';
 
+// Check if we have valid credentials
+const hasValidCredentials = ELEVENLABS_API_KEY && 
+  VOICE_ID && 
+  !ELEVENLABS_API_KEY.includes('your-elevenlabs-api-key') && 
+  !VOICE_ID.includes('your-elevenlabs-voice-id');
+
 export const generateVoiceAdvice = async (text: string): Promise<string | null> => {
-  if (!ELEVENLABS_API_KEY || !VOICE_ID) {
+  if (!hasValidCredentials) {
     console.warn('ElevenLabs API key or Voice ID not configured');
     return null;
   }
@@ -43,7 +49,7 @@ export const generateVoiceAdvice = async (text: string): Promise<string | null> 
 
 // Test ElevenLabs connection
 export const testElevenLabsConnection = async (): Promise<boolean> => {
-  if (!ELEVENLABS_API_KEY) {
+  if (!hasValidCredentials) {
     console.warn('⚠️ ElevenLabs API key not configured');
     return false;
   }
