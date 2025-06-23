@@ -10,7 +10,8 @@
     "ios": "npx expo start --ios",
     "web": "npx expo start --web",
     "build:web": "npx expo export --platform web",
-    "build": "npx expo build",
+    "build": "npx expo export --platform web",
+    "build:netlify": "npx expo export --platform web --clear",
     "eject": "npx expo eject",
     "lint": "npx expo lint"
   },
