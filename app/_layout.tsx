@@ -7,6 +7,7 @@ import { testOpenAIConnection } from '@/services/openai';
 import { testElevenLabsConnection } from '@/services/elevenlabs';
 import { testTavusConnection } from '@/services/tavus';
 import { router } from 'expo-router';
+import BoltWatermark from '@/components/BoltWatermark';
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -111,6 +112,7 @@ export default function RootLayout() {
         />
       </Stack>
       <StatusBar style="auto" />
+      <BoltWatermark />
     </>
   );
 }
