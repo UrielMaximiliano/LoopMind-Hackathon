@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Mic, Send, MicOff, Smile } from 'lucide-react-native';
-import { analyzeEmotion } from '@/services/openai';
-import { saveEmotionEntry, getCurrentUser } from '@/services/supabase';
+import { analyzeEmotionWithGrok } from '@/services/grok';
 import { EmotionAnalysis } from '@/types/emotion';
 
 interface EmotionInputProps {
@@ -23,44 +22,28 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
   const [input, setInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [moodIntensity, setMoodIntensity] = useState(5);
+  const [moodIntensity, setMoodIntensity] = useState(3);
+  const [selectedMood, setSelectedMood] = useState<'feliz' | 'triste' | 'estresado' | 'tranquilo' | null>(null);
 
   const handleTextSubmit = async () => {
-    if (!input.trim()) {
-      Alert.alert('Error', 'Por favor escribe algo antes de analizar');
+    if (!selectedMood) {
+      Alert.alert('Error', 'Por favor selecciona un estado de ánimo');
       return;
     }
 
     setIsAnalyzing(true);
     try {
-      // Analyze emotion with OpenAI
-      const analysis = await analyzeEmotion(input);
-      
-      // Save to Supabase
-      const { user } = await getCurrentUser();
-      if (user) {
-        const entryData = {
-          user_id: user.id,
-          date: new Date().toISOString().split('T')[0],
-          user_input: input,
-          input_type: 'text' as const,
-          detected_emotion: analysis.emotion,
-          ai_advice: analysis.advice,
-          confidence_score: analysis.confidence,
-          mood_intensity: analysis.intensity || moodIntensity,
-          tags: analysis.tags || [],
-        };
-
-        const { error } = await saveEmotionEntry(entryData);
-        if (error) {
-          console.error('Error saving entry:', error);
-          Alert.alert('Aviso', 'El análisis se completó pero no se pudo guardar en la base de datos.');
-        }
-      }
+      // Analyze emotion with Grok 3 mini
+      const analysis = await analyzeEmotionWithGrok({
+        mood: selectedMood,
+        intensity: moodIntensity,
+        description: input.trim() || undefined
+      });
 
       onEmotionAnalyzed(analysis);
       setInput('');
-      setMoodIntensity(5);
+      setMoodIntensity(3);
+      setSelectedMood(null);
     } catch (error) {
       console.error('Error in handleTextSubmit:', error);
       Alert.alert('Error', 'No se pudo analizar tu emoción. Por favor intenta de nuevo.');
@@ -79,53 +62,30 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
       return;
     }
     
+    if (!selectedMood) {
+      Alert.alert('Error', 'Por favor selecciona un estado de ánimo antes de grabar');
+      return;
+    }
+    
     setIsRecording(!isRecording);
     
     if (isRecording) {
       // Stop recording and process
       setIsRecording(false);
+      // TODO: Implement audio recording and processing
+      Alert.alert('Función en desarrollo', 'La grabación de audio estará disponible próximamente');
     }
   };
 
   const quickEmotions = [
-    { emotion: 'happiness', emoji: '😊', label: 'Feliz' },
-    { emotion: 'sadness', emoji: '😢', label: 'Triste' },
-    { emotion: 'stress', emoji: '😰', label: 'Estresado' },
-    { emotion: 'calm', emoji: '😌', label: 'Tranquilo' },
+    { emotion: 'feliz', emoji: '😊', label: 'Feliz' },
+    { emotion: 'triste', emoji: '😢', label: 'Triste' },
+    { emotion: 'estresado', emoji: '😰', label: 'Estresado' },
+    { emotion: 'tranquilo', emoji: '😌', label: 'Tranquilo' },
   ];
 
-  const handleQuickEmotion = async (emotion: string) => {
-    const quickAnalysis: EmotionAnalysis = {
-      emotion,
-      advice: `Has seleccionado ${emotion}. Tómate un momento para reflexionar sobre este sentimiento y recuerda que todas las emociones son válidas.`,
-      confidence: 0.9,
-      intensity: moodIntensity,
-    };
-
-    try {
-      const { user } = await getCurrentUser();
-      if (user) {
-        const entryData = {
-          user_id: user.id,
-          date: new Date().toISOString().split('T')[0],
-          user_input: `Selección rápida: ${emotion}`,
-          input_type: 'text' as const,
-          detected_emotion: emotion,
-          ai_advice: quickAnalysis.advice,
-          confidence_score: 0.9,
-          mood_intensity: moodIntensity,
-          tags: ['selección_rápida', emotion],
-        };
-
-        await saveEmotionEntry(entryData);
-      }
-
-      onEmotionAnalyzed(quickAnalysis);
-    } catch (error) {
-      console.error('Error saving quick emotion:', error);
-      // Still show the analysis even if saving fails
-      onEmotionAnalyzed(quickAnalysis);
-    }
+  const handleQuickEmotion = async (emotion: 'feliz' | 'triste' | 'estresado' | 'tranquilo') => {
+    setSelectedMood(emotion);
   };
 
   return (
@@ -134,21 +94,29 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
         <Smile size={24} color="#6B73FF" />
         <Text style={styles.title}>¿Cómo te sientes hoy?</Text>
       </View>
-      <Text style={styles.subtitle}>Comparte tus pensamientos o selecciona una emoción rápida</Text>
+      <Text style={styles.subtitle}>Selecciona tu estado de ánimo y describe cómo te sientes</Text>
 
       {/* Quick Emotions */}
       <View style={styles.quickEmotionsContainer}>
-        <Text style={styles.quickEmotionsTitle}>Selección rápida:</Text>
+        <Text style={styles.quickEmotionsTitle}>Estado de ánimo:</Text>
         <View style={styles.quickEmotionsGrid}>
           {quickEmotions.map((item) => (
             <TouchableOpacity
               key={item.emotion}
-              style={styles.quickEmotionButton}
-              onPress={() => handleQuickEmotion(item.emotion)}
+              style={[
+                styles.quickEmotionButton,
+                selectedMood === item.emotion && styles.quickEmotionButtonSelected
+              ]}
+              onPress={() => handleQuickEmotion(item.emotion as any)}
               disabled={isAnalyzing}
             >
               <Text style={styles.quickEmotionEmoji}>{item.emoji}</Text>
-              <Text style={styles.quickEmotionLabel}>{item.label}</Text>
+              <Text style={[
+                styles.quickEmotionLabel,
+                selectedMood === item.emotion && styles.quickEmotionLabelSelected
+              ]}>
+                {item.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -156,9 +124,9 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
 
       {/* Mood Intensity Slider */}
       <View style={styles.intensityContainer}>
-        <Text style={styles.intensityLabel}>Intensidad del estado de ánimo: {moodIntensity}/10</Text>
+        <Text style={styles.intensityLabel}>Intensidad: {moodIntensity}/5</Text>
         <View style={styles.intensitySlider}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+          {[1, 2, 3, 4, 5].map((value) => (
             <TouchableOpacity
               key={value}
               style={[
@@ -176,7 +144,7 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.textInput}
-          placeholder="Describe cómo te sientes... Por ejemplo: 'Me siento ansioso por el trabajo' o 'Estoy muy feliz hoy'"
+          placeholder="Describe cómo te sientes... (opcional)"
           placeholderTextColor="#A0A0A0"
           value={input}
           onChangeText={setInput}
@@ -192,7 +160,7 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
         <TouchableOpacity
           style={[styles.voiceButton, isRecording && styles.voiceButtonActive]}
           onPress={handleVoiceRecord}
-          disabled={isAnalyzing}
+          disabled={isAnalyzing || !selectedMood}
         >
           {isRecording ? (
             <MicOff size={24} color="white" />
@@ -202,9 +170,9 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.submitButton, (!input.trim() || isAnalyzing) && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (!selectedMood || isAnalyzing) && styles.submitButtonDisabled]}
           onPress={handleTextSubmit}
-          disabled={!input.trim() || isAnalyzing}
+          disabled={!selectedMood || isAnalyzing}
         >
           <LinearGradient
             colors={['#6B73FF', '#9B59B6']}
@@ -225,7 +193,7 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
       {isAnalyzing && (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>
-            Analizando tu estado emocional con IA...
+            Analizando tu estado emocional con Grok 3 mini...
           </Text>
         </View>
       )}
@@ -288,6 +256,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
+  quickEmotionButtonSelected: {
+    backgroundColor: '#6B73FF',
+    borderColor: '#6B73FF',
+  },
   quickEmotionEmoji: {
     fontSize: 24,
     marginBottom: 4,
@@ -296,6 +268,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#34495E',
     fontWeight: '500',
+  },
+  quickEmotionLabelSelected: {
+    color: 'white',
   },
   intensityContainer: {
     marginBottom: 20,

@@ -63,9 +63,9 @@ export default function Message({ message }: MessageProps) {
 
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.aiContainer]}>
-      {message.text && (
+      {message.content && (
         <Text style={[styles.text, isUser ? styles.userText : styles.aiText]}>
-          {message.text}
+          {message.content}
         </Text>
       )}
 
