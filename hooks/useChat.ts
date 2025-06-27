@@ -142,14 +142,20 @@ export function useChat() {
     };
 
     const sendAudioMessage = async (audioUri: string) => {
+        const tempId = 'temp-' + Date.now().toString();
+        
         try {
             setLoading(true);
 
-            const tempId = 'temp-' + Date.now().toString();
+            // Get current user
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                throw new Error('Usuario no autenticado');
+            }
             const userMessage: ChatMessage = {
                 id: tempId,
                 conversation_id: conversationId || '',
-                user_id: '',
+                user_id: user.id,
                 content: '🎤 Enviando audio...',
                 sender: 'user',
                 audio_url: audioUri,
@@ -159,36 +165,63 @@ export function useChat() {
 
             // 1. Fetch audio file as blob
             const response = await fetch(audioUri);
+            if (!response.ok) {
+                throw new Error('No se pudo obtener el archivo de audio');
+            }
             const blob = await response.blob();
     
-            // 2. Upload to Supabase Storage
+            // 2. Upload to Supabase Storage with user folder structure
             const fileExt = audioUri.split('.').pop() || 'm4a';
-            const fileName = `audio_${Date.now()}.${fileExt}`;
-            const { error: uploadError } = await supabase.storage
+            const fileName = `${user.id}/audio_${Date.now()}.${fileExt}`;
+            
+            console.log('Subiendo archivo:', fileName);
+            
+            const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('audio-messages')
                 .upload(fileName, blob, {
                     contentType: `audio/${fileExt}`,
+                    upsert: false
                 });
     
             if (uploadError) {
-                throw uploadError;
+                console.error('Error de subida:', uploadError);
+                throw new Error(`Error al subir audio: ${uploadError.message}`);
             }
+
+            console.log('Archivo subido exitosamente:', uploadData);
     
             // 3. Get public URL
             const { data: { publicUrl } } = supabase.storage
                 .from('audio-messages')
                 .getPublicUrl(fileName);
 
+            console.log('URL pública generada:', publicUrl);
+
             // 4. Call edge function
-            await sendChatMessage({
+            const chatResponse = await sendChatMessage({
                 message: '',
                 audioUrl: publicUrl,
                 conversationId: conversationId || undefined
             });
 
+            console.log('Respuesta del chat:', chatResponse);
+
         } catch (error) {
             console.error('Error sending audio message:', error);
-            setMessages(current => current.filter(msg => !msg.id.startsWith('temp-')));
+            
+            // Update the temporary message to show error
+            setMessages(current => 
+                current.map(msg => 
+                    msg.id === tempId 
+                        ? { ...msg, content: `❌ Error al enviar audio: ${error instanceof Error ? error.message : 'Error desconocido'}` }
+                        : msg
+                )
+            );
+            
+            // Remove the temp message after 3 seconds
+            setTimeout(() => {
+                setMessages(current => current.filter(msg => msg.id !== tempId));
+            }, 3000);
         } finally {
             setLoading(false);
         }

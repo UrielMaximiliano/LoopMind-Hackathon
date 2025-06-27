@@ -3,11 +3,11 @@ import {
   View,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { ChatMessage } from '@/types/chat';
 import Message from './Message';
+import TypingIndicator from './TypingIndicator';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -17,29 +17,38 @@ interface ChatMessagesProps {
 export default function ChatMessages({ messages, loading }: ChatMessagesProps) {
   const flatListRef = useRef<FlatList>(null);
 
+  // Crear datos que incluyan el indicador de typing cuando esté cargando
+  const messagesWithTyping = React.useMemo(() => {
+    if (loading) {
+      return [...messages, { id: 'typing-indicator', isTyping: true }];
+    }
+    return messages;
+  }, [messages, loading]);
+
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messagesWithTyping.length > 0) {
       flatListRef.current?.scrollToEnd({ animated: true });
     }
-  }, [messages]);
+  }, [messagesWithTyping]);
+
+  const renderItem = ({ item }: { item: any }) => {
+    if (item.isTyping) {
+      return <TypingIndicator />;
+    }
+    return <Message message={item} />;
+  };
 
   return (
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
-        data={messages}
+        data={messagesWithTyping}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <Message message={item} />}
+        renderItem={renderItem}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
         contentContainerStyle={styles.messageList}
         showsVerticalScrollIndicator={false}
       />
-      
-      {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#6B73FF" />
-        </View>
-      )}
     </View>
   );
 }
@@ -52,18 +61,5 @@ const styles = StyleSheet.create({
   messageList: {
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 100 : 80,
-  },
-  loadingContainer: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: 8,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
 }); 
