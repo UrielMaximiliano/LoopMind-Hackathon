@@ -12,17 +12,29 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { User, Crown, Settings, Bell, Moon, Sun, LogOut, Heart, Star, Shield, CircleHelp as HelpCircle, ExternalLink, Database, Zap } from 'lucide-react-native';
+import { User, Crown, Settings, Bell, Moon, Sun, LogOut, Heart, Star, Shield, CircleHelp as HelpCircle, ExternalLink, Database, Zap, Clock } from 'lucide-react-native';
 import { getCurrentUser, signOut } from '@/services/supabase';
+import { getNotificationSettings, saveNotificationSettings, NotificationSettings } from '@/services/notifications';
+import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
+    enabled: true,
+    hour: 20,
+    minute: 0,
+  });
+
+  const { isOnline, isSyncing, getOfflineDataCount } = useOfflineStorage();
+  const [offlineDataCount, setOfflineDataCount] = useState({ emotions: 0, diary: 0, total: 0 });
 
   useEffect(() => {
     loadUserData();
+    loadSettings();
+    loadOfflineDataCount();
   }, []);
 
   const loadUserData = async () => {
@@ -31,6 +43,25 @@ export default function ProfileScreen() {
       setUser(currentUser);
     } catch (error) {
       console.error('Error loading user data:', error);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const settings = await getNotificationSettings();
+      setNotificationSettings(settings);
+      setNotifications(settings.enabled);
+    } catch (error) {
+      console.error('Error loading notification settings:', error);
+    }
+  };
+
+  const loadOfflineDataCount = async () => {
+    try {
+      const count = await getOfflineDataCount();
+      setOfflineDataCount(count);
+    } catch (error) {
+      console.error('Error loading offline data count:', error);
     }
   };
 
@@ -82,6 +113,55 @@ export default function ProfileScreen() {
         },
       ]
     );
+  };
+
+  const handleNotificationToggle = async (enabled: boolean) => {
+    try {
+      const newSettings = { ...notificationSettings, enabled };
+      await saveNotificationSettings(newSettings);
+      setNotificationSettings(newSettings);
+      setNotifications(enabled);
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      Alert.alert('Error', 'No se pudo actualizar la configuración de notificaciones');
+    }
+  };
+
+  const handleNotificationTimeSetup = () => {
+    Alert.alert(
+      '🔔 Configurar Recordatorio',
+      'Selecciona la hora para recibir tu recordatorio diario de bienestar emocional.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Mañana (9:00)',
+          onPress: () => updateNotificationTime(9, 0)
+        },
+        {
+          text: 'Tarde (14:00)',
+          onPress: () => updateNotificationTime(14, 0)
+        },
+        {
+          text: 'Noche (20:00)',
+          onPress: () => updateNotificationTime(20, 0)
+        },
+      ]
+    );
+  };
+
+  const updateNotificationTime = async (hour: number, minute: number) => {
+    try {
+      const newSettings = { ...notificationSettings, hour, minute };
+      await saveNotificationSettings(newSettings);
+      setNotificationSettings(newSettings);
+      Alert.alert(
+        'Recordatorio Configurado',
+        `Tu recordatorio diario está programado para las ${hour}:${minute.toString().padStart(2, '0')}`
+      );
+    } catch (error) {
+      console.error('Error updating notification time:', error);
+      Alert.alert('Error', 'No se pudo actualizar la hora del recordatorio');
+    }
   };
 
   const userName = user?.email?.split('@')[0] || 'Usuario';
@@ -188,11 +268,48 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={notifications}
-                onValueChange={setNotifications}
+                onValueChange={handleNotificationToggle}
                 trackColor={{ false: '#E0E0E0', true: '#6B73FF' }}
                 thumbColor="white"
               />
             </View>
+
+            {notifications && (
+              <TouchableOpacity style={styles.settingItem} onPress={handleNotificationTimeSetup}>
+                <View style={styles.settingLeft}>
+                  <Clock size={20} color="#6B73FF" />
+                  <View style={styles.settingTextContainer}>
+                    <Text style={styles.settingText}>Horario de Recordatorio</Text>
+                    <Text style={styles.settingSubtext}>
+                      {notificationSettings.hour.toString().padStart(2, '0')}:{notificationSettings.minute.toString().padStart(2, '0')}
+                    </Text>
+                  </View>
+                </View>
+                <ExternalLink size={16} color="#7F8C8D" />
+              </TouchableOpacity>
+            )}
+
+            {!isOnline && (
+              <View style={[styles.settingItem, styles.offlineIndicator]}>
+                <View style={styles.settingLeft}>
+                  <Database size={20} color="#FF6B6B" />
+                  <View style={styles.settingTextContainer}>
+                    <Text style={[styles.settingText, { color: '#FF6B6B' }]}>Modo Offline</Text>
+                    <Text style={styles.settingSubtext}>
+                      {offlineDataCount.total > 0 
+                        ? `${offlineDataCount.total} elementos pendientes de sincronizar`
+                        : 'Sin conexión a internet'
+                      }
+                    </Text>
+                  </View>
+                </View>
+                {isSyncing && (
+                  <View style={styles.syncIndicator}>
+                    <Text style={styles.syncText}>Sincronizando...</Text>
+                  </View>
+                )}
+              </View>
+            )}
 
             <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
@@ -462,5 +579,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FF5722',
+  },
+  settingTextContainer: {
+    flex: 1,
+  },
+  settingSubtext: {
+    fontSize: 12,
+    color: '#7F8C8D',
+    marginTop: 2,
+  },
+  offlineIndicator: {
+    backgroundColor: '#FFF5F5',
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF6B6B',
+  },
+  syncIndicator: {
+    backgroundColor: '#6B73FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  syncText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: '500',
   },
 });

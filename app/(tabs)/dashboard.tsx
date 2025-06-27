@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { TrendingUp, Calendar, Clock, Award, ChartBar as BarChart3, Target } from 'lucide-react-native';
 import EmotionChart from '@/components/EmotionChart';
 import EmotionHistory from '@/components/EmotionHistory';
+import EmotionMoodboard from '@/components/EmotionMoodboard';
 import { EmotionEntry, EmotionStats } from '@/types/emotion';
 import { getEmotionEntries, getEmotionStats, getCurrentUser } from '@/services/supabase';
 import { generateVoiceAdvice } from '@/services/elevenlabs';
@@ -243,6 +244,12 @@ export default function DashboardScreen() {
         <EmotionChart
           data={emotionStats}
           title={`Tus Emociones (${selectedPeriod === 'week' ? 'Últimos 7 Días' : 'Últimos 30 Días'})`}
+        />
+
+        {/* Emotion Moodboard */}
+        <EmotionMoodboard
+          stats={emotionStats}
+          period={selectedPeriod}
         />
 
         {/* Recent History */}

@@ -169,7 +169,6 @@ async function callGrok3Mini(payload: {
 
   if (!GROK_API_KEY) {
     console.warn('GROK_API_KEY no encontrada en el entorno, usando clave de respaldo para depuración.');
-    GROK_API_KEY = "xai-GoLZK2R3bb4PrPO9GtYzboUujzjkObcT25mOy6APEhLCgrjpciHUIfKiMGiaH4jgceAU8IxvVnLA4msc";
   }
   
   if (!GROK_API_KEY) {

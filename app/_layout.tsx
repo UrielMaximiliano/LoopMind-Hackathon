@@ -2,16 +2,27 @@ import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
+import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 import { supabase, testSupabaseConnection } from '@/services/supabase';
 import { testOpenAIConnection } from '@/services/openai';
 import { testElevenLabsConnection } from '@/services/elevenlabs';
 import { testTavusConnection } from '@/services/tavus';
+import { setupNotifications, initializeNotificationListeners } from '@/services/notifications';
 import { router } from 'expo-router';
 
 export default function RootLayout() {
   useFrameworkReady();
+  const { syncOfflineData } = useOfflineStorage();
 
   useEffect(() => {
+    // Initialize notifications
+    const initializeApp = async () => {
+      await setupNotifications();
+      initializeNotificationListeners();
+    };
+    
+    initializeApp();
+
     // Check auth state on app start
     const checkAuthState = async () => {
       try {
@@ -21,6 +32,8 @@ export default function RootLayout() {
           router.replace('/auth');
         } else {
           router.replace('/(tabs)');
+          // Sync offline data when user is authenticated
+          syncOfflineData();
         }
       } catch (error) {
         console.error('Auth check error:', error);

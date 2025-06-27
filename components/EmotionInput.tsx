@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Mic, Send, MicOff, Smile } from 'lucide-react-native';
 import { analyzeEmotionWithGrok } from '@/services/grok';
 import { EmotionAnalysis } from '@/types/emotion';
+import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 
 interface EmotionInputProps {
   onEmotionAnalyzed: (analysis: EmotionAnalysis) => void;
@@ -25,6 +26,8 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
   const [moodIntensity, setMoodIntensity] = useState(3);
   const [selectedMood, setSelectedMood] = useState<'feliz' | 'triste' | 'estresado' | 'tranquilo' | null>(null);
 
+  const { isOnline, saveOfflineEmotion } = useOfflineStorage();
+
   const handleTextSubmit = async () => {
     if (!selectedMood) {
       Alert.alert('Error', 'Por favor selecciona un estado de ánimo');
@@ -33,6 +36,35 @@ export default function EmotionInput({ onEmotionAnalyzed }: EmotionInputProps) {
 
     setIsAnalyzing(true);
     try {
+      if (!isOnline) {
+        // Handle offline mode
+        const offlineAnalysis: EmotionAnalysis = {
+          emotion: selectedMood,
+          advice: 'Análisis guardado offline. Se procesará cuando tengas conexión.',
+          confidence: 0.8,
+          intensity: moodIntensity,
+        };
+
+        await saveOfflineEmotion({
+          ...offlineAnalysis,
+          timestamp: new Date().toISOString(),
+          synced: false,
+          mood: selectedMood,
+          description: input.trim() || undefined,
+        });
+
+        Alert.alert(
+          'Guardado offline',
+          'Tu entrada emocional se guardó localmente y se analizará cuando tengas conexión.'
+        );
+
+        onEmotionAnalyzed(offlineAnalysis);
+        setInput('');
+        setMoodIntensity(3);
+        setSelectedMood(null);
+        return;
+      }
+
       // Analyze emotion with Grok 3 mini
       const analysis = await analyzeEmotionWithGrok({
         mood: selectedMood,
