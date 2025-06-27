@@ -9,6 +9,7 @@ import { testElevenLabsConnection } from '@/services/elevenlabs';
 import { testTavusConnection } from '@/services/tavus';
 import { setupNotifications, initializeNotificationListeners } from '@/services/notifications';
 import { router } from 'expo-router';
+import BoltWatermark from '@/components/BoltWatermark';
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -26,10 +27,17 @@ export default function RootLayout() {
     // Check auth state on app start
     const checkAuthState = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          router.replace('/auth');
+        // Only check auth if Supabase is properly configured
+        if (supabaseUrl && supabaseKey && 
+            !supabaseUrl.includes('your-project-id') && 
+            !supabaseKey.includes('your-supabase-anon-key')) {
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (!session) {
+            router.replace('/auth');
+          } else {
+            router.replace('/(tabs)');
+          }
         } else {
           router.replace('/(tabs)');
           // Sync offline data when user is authenticated
@@ -43,16 +51,26 @@ export default function RootLayout() {
 
     checkAuthState();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        router.replace('/auth');
-      } else if (event === 'SIGNED_IN') {
-        router.replace('/(tabs)');
-      }
-    });
+    // Listen for auth changes (only if Supabase is configured)
+    let subscription: any = null;
+    if (supabaseUrl && supabaseKey && 
+        !supabaseUrl.includes('your-project-id') && 
+        !supabaseKey.includes('your-supabase-anon-key')) {
+      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          router.replace('/auth');
+        } else if (event === 'SIGNED_IN') {
+          router.replace('/(tabs)');
+        }
+      });
+      subscription = authSubscription;
+    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   return (
@@ -78,6 +96,7 @@ export default function RootLayout() {
         />
       </Stack>
       <StatusBar style="auto" />
+      <BoltWatermark />
     </>
   );
 }

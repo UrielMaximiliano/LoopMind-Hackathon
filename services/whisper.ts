@@ -1,7 +1,10 @@
 const ELEVENLABS_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY;
 
+// Check if we have a valid API key
+const hasValidApiKey = ELEVENLABS_API_KEY && !ELEVENLABS_API_KEY.includes('your-elevenlabs-api-key');
+
 export async function transcribeAudio(audioUri: string): Promise<string> {
-    if (!ELEVENLABS_API_KEY) {
+    if (!hasValidApiKey) {
         console.warn('ELEVENLABS_API_KEY no está configurada');
         return '';
     }
@@ -32,4 +35,4 @@ export async function transcribeAudio(audioUri: string): Promise<string> {
         console.error('Error en la transcripción:', error);
         return '';
     }
-} 
+}
